@@ -26,7 +26,7 @@ node server.js            # or: npm start
 ```
 
 - Site: http://127.0.0.1:8080/
-- Admin: http://127.0.0.1:8080/admin/ — first-run password is `houseroot123`. Change it under Site settings → Change password.
+- Admin: http://127.0.0.1:8080/admin/ — first-run password is `houseroot1`. Change it under Site settings → Change password.
 - Env vars: `PORT` (default 8080), `HOST` (default 127.0.0.1; set `0.0.0.0` on a VPS behind nginx), `ADMIN_PASSWORD` (overrides the stored password).
 
 ## Admin panel
@@ -35,6 +35,16 @@ node server.js            # or: npm start
 - **Blog posts**: title, slug, date, author, excerpt, Markdown body with live preview, cover image, published flag.
 - **Site settings**: WhatsApp number, phone, email, RERA number and office address. These fill the `[placeholders]` across every page.
 - Drafts (published off) are hidden from the public site; the server only exposes published items to visitors.
+
+## Security
+
+- **Login lockout**: 5 wrong passwords in 15 minutes locks that IP for 15 minutes; each further lockout doubles the wait, up to 24 hours. Lockouts are stored in `data/lockouts.json`, so restarting the server does not clear them. Every failed attempt is also slowed by 0.8 s.
+- **Sessions** last 12 hours (`ADMIN_SESSION_HOURS` to change) and all sessions are ended when the password changes.
+- **Password rules**: 8 to 10 characters with at least one letter and one number. Stored as a salted scrypt hash in `data/admin.json`.
+- **Audit log**: sign-ins, failures, lockouts, uploads and every content change are appended to `data/audit.log` with time and IP.
+- **Uploads** are checked by file signature, not just extension; only real JPG, PNG, WebP, GIF or PDF content is accepted (max 6 MB).
+- **Headers**: the admin panel is served with a Content Security Policy, cannot be embedded in frames, and sends no referrer.
+- **Optional**: `ADMIN_ALLOW_IPS=1.2.3.4,5.6.7.8` restricts the admin API to those addresses; `SECURE_COOKIES=1` marks the session cookie HTTPS-only; set `TRUST_PROXY=1` when running behind nginx so the real client IP is used.
 
 ## Deploying
 

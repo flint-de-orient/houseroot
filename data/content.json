@@ -9,6 +9,54 @@
   },
   "projects": [
     {
+      "name": "babay",
+      "slug": "wfwgfg",
+      "locality": "babun",
+      "city": "Kolkataes",
+      "address": "rgvsvasv",
+      "developer": "ergebvdbver",
+      "tag": "Ready to move",
+      "status": "under-construction",
+      "mode": "buy",
+      "featured": false,
+      "published": true,
+      "price": "rgfvesvbsgv",
+      "priceLakh": 7200000,
+      "pricePerSqft": "gergvbv",
+      "config": "rggvevesr",
+      "carpet": "ergees",
+      "possession": "ergvbv",
+      "possessionYear": 2027,
+      "towers": "G+5",
+      "rera": "gqesgvsebvdvegv",
+      "chips": [
+        "srgvdbfcn"
+      ],
+      "about": "fervsvse",
+      "developerNote": "fvwgvwegwergwerg",
+      "units": [
+        {
+          "type": "2bhk",
+          "carpet": "780",
+          "builtup": "1551sqrft",
+          "facing": "east",
+          "price": "72"
+        }
+      ],
+      "amenities": [],
+      "nearby": [],
+      "verdict": {
+        "goodFor": "",
+        "liked": [],
+        "watch": []
+      },
+      "advisor": "",
+      "walkedOn": "",
+      "images": [],
+      "mapEmbed": "",
+      "id": "p_318f1a46"
+    },
+    {
       "id": "p1",
       "slug": "sample-new-town-launch",
       "name": "[Project name]",
@@ -327,6 +375,28 @@
     }
   ],
   "posts": [
+    {
+      "title": "drgdb",
+      "slug": "rgvdbsdfnbsfnbsbdbdb",
+      "date": "2026-11-16",
+      "author": "HouseRoot team",
+      "cover": "assets/uploads/mwj0kh75-056a61.png",
+      "excerpt": "tbhbsdbsrdbsdbadbadegrg",
+      "body": "dsbvsdfbsdftbrdbdfgbvdbadegvrsdbfnbdnrdnbdnbdnfnfgbsdbsd",
+      "published": true,
+      "id": "b_feebb0ef"
+    },
+    {
+      "title": "fsvsvsdv",
+      "slug": "fvsdfbvsbvsb",
+      "date": "2026-11-16",
+      "author": "HouseRoot team",
+      "cover": "",
+      "excerpt": "rvebvdbdb",
+      "body": "gvdfbvsdbvsdbsdbdbrdtbevbsegvdev",
+      "published": true,
+      "id": "b_d4b14189"
+    },
     {
       "id": "b1",
       "slug": "new-town-vs-salt-lake-where-to-buy-in-2026",

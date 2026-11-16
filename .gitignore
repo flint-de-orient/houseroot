@@ -2,3 +2,5 @@ data/admin.json
 data/secret.key
 data/content.json.tmp
 node_modules/
+data/lockouts.json
+data/audit.log

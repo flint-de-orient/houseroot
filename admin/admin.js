@@ -22,14 +22,39 @@
   }
 
   /* ---------- auth ---------- */
-  function showLogin() { $('#login').hidden = false; $('#app').hidden = true; setTimeout(() => $('#pw').focus(), 0); }
+  function showLogin() {
+    $('#login-form').reset(); $('#pw').value = ''; $('#login-err').hidden = true;
+    $$('.pw-eye').forEach(btn => setEye(btn, false));
+    $('#login').hidden = false; $('#app').hidden = true; setTimeout(() => $('#pw').focus(), 0);
+  }
+  function setEye(btn, show) {
+    const input = btn.parentElement.querySelector('input');
+    input.type = show ? 'text' : 'password';
+    btn.setAttribute('aria-pressed', String(show)); btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password'); btn.title = show ? 'Hide password' : 'Show password';
+  }
+  $$('.pw-eye').forEach(btn => btn.addEventListener('click', () => setEye(btn, btn.getAttribute('aria-pressed') !== 'true')));
+  // Hard character limits: trim typed or pasted text and show a counter on password boxes
+  $$('[maxlength]').forEach(el => {
+    const max = Number(el.getAttribute('maxlength'));
+    const counter = el.type === 'password' ? Object.assign(document.createElement('span'), { className: 'pw-count' }) : null;
+    if (counter) el.closest('.field').appendChild(counter);
+    const sync = () => {
+      if (el.value.length > max) el.value = el.value.slice(0, max);
+      if (counter) { counter.textContent = el.value.length + ' / ' + max; counter.classList.toggle('is-max', el.value.length >= max); }
+    };
+    el.addEventListener('input', sync); el.addEventListener('paste', () => setTimeout(sync, 0)); el.addEventListener('change', sync);
+    if (el.form) el.form.addEventListener('reset', () => setTimeout(sync, 0));
+    sync();
+  });
   async function showApp() { $('#login').hidden = true; $('#app').hidden = false; await refresh(); go(state.view); }
   $('#login-form').addEventListener('submit', async e => {
     e.preventDefault(); const err = $('#login-err'); err.hidden = true;
+    const btn = $('button[type="submit"]', e.target); btn.disabled = true;
     try { await api('POST', '/api/login', { password: $('#pw').value }); $('#pw').value = ''; await showApp(); }
-    catch (ex) { err.textContent = ex.message; err.hidden = false; }
+    catch (ex) { err.textContent = ex.message; err.hidden = false; $('#pw').value = ''; $('#pw').dispatchEvent(new Event('input')); $('#pw').focus(); }
+    finally { btn.disabled = false; }
   });
-  $('#logout').addEventListener('click', async () => { await api('POST', '/api/logout'); showLogin(); });
+  $('#logout').addEventListener('click', async () => { try { await api('POST', '/api/logout'); } catch { /* already signed out */ } state.content = null; state.editing = null; $('#password-form').reset(); showLogin(); });
 
   async function refresh() { state.content = await api('GET', '/api/admin/content'); }
 
@@ -203,7 +228,12 @@
   });
   $('#password-form').addEventListener('submit', async e => {
     e.preventDefault();
-    try { await api('POST', '/api/admin/password', collect($('#password-form'))); $('#password-form').reset(); toast('Password updated'); } catch (ex) { toast(ex.message, true); }
+    try {
+      const r = await api('POST', '/api/admin/password', collect($('#password-form')));
+      $('#password-form').reset(); $$('.pw-eye', $('#password-form')).forEach(btn => setEye(btn, false));
+      if (r.reauth) { state.content = null; showLogin(); const err = $('#login-err'); err.textContent = 'Password updated. Please sign in again with the new password.'; err.style.color = '#1E7A3C'; err.hidden = false; setTimeout(() => err.style.color = '', 6000); }
+      else toast('Password updated');
+    } catch (ex) { toast(ex.message, true); }
   });
 
   /* ---------- boot ---------- */

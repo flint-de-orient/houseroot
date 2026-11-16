@@ -17,7 +17,14 @@ const UPLOAD_DIR = path.join(ROOT, 'assets', 'uploads');
 const PORT = Number(process.env.PORT || 8080);
 const HOST = process.env.HOST || '127.0.0.1';
 const COOKIE = 'hr_admin';
-const SESSION_DAYS = 7;
+const SESSION_HOURS = Number(process.env.ADMIN_SESSION_HOURS || 12);
+const LOCK_FILE = path.join(DATA_DIR, 'lockouts.json');
+const AUDIT_FILE = path.join(DATA_DIR, 'audit.log');
+const MAX_FAILS = 5;                 // wrong passwords allowed per window
+const FAIL_WINDOW = 15 * 60 * 1000;  // window for counting failures
+const BASE_LOCK = 15 * 60 * 1000;    // first lockout; doubles on each repeat, capped at 24 h
+const MAX_LOCK = 24 * 60 * 60 * 1000;
+const ALLOW_IPS = (process.env.ADMIN_ALLOW_IPS || '').split(',').map(s => s.trim()).filter(Boolean);
 const MAX_BODY = 8 * 1024 * 1024;
 
 const MIME = {
@@ -46,8 +53,8 @@ let admin;
 if (fs.existsSync(ADMIN_FILE)) {
   admin = JSON.parse(fs.readFileSync(ADMIN_FILE, 'utf8'));
 } else {
-  const initial = process.env.ADMIN_PASSWORD || 'houseroot123';
-  admin = hashPassword(initial);
+  const initial = process.env.ADMIN_PASSWORD || 'houseroot1';
+  admin = hashPassword(initial); admin.v = 1;
   fs.writeFileSync(ADMIN_FILE, JSON.stringify(admin), { mode: 0o600 });
   console.log(`[admin] First run: password set to "${initial}". Change it from the admin panel (Settings → Password).`);
 }
@@ -70,6 +77,7 @@ function verify(token) {
   try {
     const payload = JSON.parse(Buffer.from(data, 'base64url').toString());
     if (!payload.exp || payload.exp < Date.now()) return null;
+    if ((payload.v || 0) !== (admin.v || 0)) return null; // password changed since: session is dead
     return payload;
   } catch { return null; }
 }
@@ -163,7 +171,7 @@ function uniqueSlug(list, slug, id) {
 function send(res, code, body, headers = {}) {
   const isObj = body !== null && typeof body === 'object' && !Buffer.isBuffer(body);
   const data = isObj ? JSON.stringify(body) : body;
-  res.writeHead(code, Object.assign({ 'Content-Type': isObj ? 'application/json; charset=utf-8' : 'text/plain; charset=utf-8', 'X-Content-Type-Options': 'nosniff' }, headers));
+  res.writeHead(code, Object.assign({ 'Content-Type': isObj ? 'application/json; charset=utf-8' : 'text/plain; charset=utf-8', 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store' }, SECURITY_HEADERS, headers));
   res.end(data);
 }
 function readJson(req) {
@@ -174,16 +182,49 @@ function readJson(req) {
     req.on('error', reject);
   });
 }
-const attempts = new Map();
-function tooManyAttempts(ip) {
-  const a = attempts.get(ip); if (!a) return false;
-  if (Date.now() - a.first > 15 * 60 * 1000) { attempts.delete(ip); return false; }
-  return a.count >= 6;
+/* ---------- login throttling (persisted so a restart does not reset it) ---------- */
+function loadLocks() { try { return JSON.parse(fs.readFileSync(LOCK_FILE, 'utf8')); } catch { return {}; } }
+function saveLocks(l) { try { fs.writeFileSync(LOCK_FILE, JSON.stringify(l), { mode: 0o600 }); } catch (e) { console.error('lockouts', e.message); } }
+function clientIp(req) {
+  const fwd = process.env.TRUST_PROXY ? String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() : '';
+  return fwd || req.socket.remoteAddress || 'unknown';
+}
+function lockState(ip) {
+  const locks = loadLocks(); const now = Date.now(); let changed = false;
+  for (const k of Object.keys(locks)) { const e = locks[k]; if ((!e.until || e.until < now) && now - (e.first || 0) > FAIL_WINDOW && now - (e.last || 0) > MAX_LOCK) { delete locks[k]; changed = true; } }
+  if (changed) saveLocks(locks);
+  const e = locks[ip] || { fails: 0, first: now, last: 0, until: 0, locks: 0 };
+  if (e.until && e.until > now) return { locked: true, retryAfter: Math.ceil((e.until - now) / 1000), remaining: 0 };
+  if (now - e.first > FAIL_WINDOW) { e.fails = 0; e.first = now; }
+  return { locked: false, retryAfter: 0, remaining: MAX_FAILS - e.fails, entry: e, locks };
 }
 function noteFailure(ip) {
-  const a = attempts.get(ip) || { first: Date.now(), count: 0 };
-  a.count++; attempts.set(ip, a);
+  const st = lockState(ip); if (st.locked) return st;
+  const e = st.entry; const now = Date.now();
+  e.fails++; e.last = now;
+  if (e.fails >= MAX_FAILS) { const dur = Math.min(BASE_LOCK * Math.pow(2, e.locks || 0), MAX_LOCK); e.until = now + dur; e.locks = (e.locks || 0) + 1; e.fails = 0; e.first = now; }
+  st.locks[ip] = e; saveLocks(st.locks);
+  return e.until > now ? { locked: true, retryAfter: Math.ceil((e.until - now) / 1000), remaining: 0 } : { locked: false, remaining: MAX_FAILS - e.fails };
 }
+function clearFailures(ip) { const locks = loadLocks(); if (locks[ip]) { delete locks[ip]; saveLocks(locks); } }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function audit(req, action, detail = '') {
+  const line = `${new Date().toISOString()} ${clientIp(req)} ${action}${detail ? ' ' + detail : ''}\n`;
+  fs.appendFile(AUDIT_FILE, line, () => {});
+}
+function cookieFlags(req) {
+  const https = process.env.SECURE_COOKIES === '1' || req.headers['x-forwarded-proto'] === 'https';
+  return `Path=/; HttpOnly; SameSite=Strict${https ? '; Secure' : ''}`;
+}
+const SECURITY_HEADERS = { 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer', 'Permissions-Policy': 'camera=(), microphone=(), geolocation=()' };
+const ADMIN_CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+const MAGIC = {
+  '.jpg': b => b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF, '.jpeg': b => b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF,
+  '.png': b => b.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])),
+  '.gif': b => b.slice(0, 4).toString() === 'GIF8',
+  '.webp': b => b.slice(0, 4).toString() === 'RIFF' && b.slice(8, 12).toString() === 'WEBP',
+  '.pdf': b => b.slice(0, 4).toString() === '%PDF'
+};
 
 /* ---------- API ---------- */
 async function api(req, res, url) {
@@ -191,17 +232,26 @@ async function api(req, res, url) {
   const method = req.method;
   const mutating = method !== 'GET';
   if (mutating && req.headers['x-requested-with'] !== 'HouseRootAdmin') return send(res, 403, { error: 'Missing request header' });
+  const ip = clientIp(req);
+  if (ALLOW_IPS.length && (p === '/api/login' || p.startsWith('/api/admin/')) && !ALLOW_IPS.includes(ip)) { audit(req, 'blocked-ip', p); return send(res, 403, { error: 'Admin access is not allowed from this network' }); }
 
   if (p === '/api/login' && method === 'POST') {
-    const ip = req.socket.remoteAddress;
-    if (tooManyAttempts(ip)) return send(res, 429, { error: 'Too many attempts. Try again in 15 minutes.' });
+    const st = lockState(ip);
+    if (st.locked) { audit(req, 'login-locked'); return send(res, 429, { error: `Too many wrong passwords. Try again in ${Math.ceil(st.retryAfter / 60)} min.`, retryAfter: st.retryAfter }, { 'Retry-After': String(st.retryAfter) }); }
     const body = await readJson(req);
-    if (!checkPassword(String(body.password || ''))) { noteFailure(ip); return send(res, 401, { error: 'Wrong password' }); }
-    attempts.delete(ip);
-    const token = sign({ exp: Date.now() + SESSION_DAYS * 864e5, r: crypto.randomBytes(6).toString('hex') });
-    return send(res, 200, { ok: true }, { 'Set-Cookie': `${COOKIE}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${SESSION_DAYS * 86400}` });
+    const pw = String(body.password || '');
+    if (pw.length > 10 || !checkPassword(pw)) {
+      const after = noteFailure(ip); audit(req, 'login-fail');
+      await sleep(800); // slow down guessing
+      if (after.locked) return send(res, 429, { error: `Too many wrong passwords. Locked for ${Math.ceil(after.retryAfter / 60)} min.`, retryAfter: after.retryAfter }, { 'Retry-After': String(after.retryAfter) });
+      return send(res, 401, { error: `Wrong password. ${after.remaining} attempt${after.remaining === 1 ? '' : 's'} left before a lockout.`, remaining: after.remaining });
+    }
+    clearFailures(ip); audit(req, 'login-ok');
+    const maxAge = SESSION_HOURS * 3600;
+    const token = sign({ exp: Date.now() + maxAge * 1000, v: admin.v || 0, r: crypto.randomBytes(6).toString('hex') });
+    return send(res, 200, { ok: true }, { 'Set-Cookie': `${COOKIE}=${token}; ${cookieFlags(req)}; Max-Age=${maxAge}` });
   }
-  if (p === '/api/logout' && method === 'POST') return send(res, 200, { ok: true }, { 'Set-Cookie': `${COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0` });
+  if (p === '/api/logout' && method === 'POST') { audit(req, 'logout'); return send(res, 200, { ok: true }, { 'Set-Cookie': `${COOKIE}=; ${cookieFlags(req)}; Max-Age=0` }); }
   if (p === '/api/content' && method === 'GET') return send(res, 200, publicView(readContent()), { 'Cache-Control': 'no-store' });
 
   if (!p.startsWith('/api/admin/')) return send(res, 404, { error: 'Not found' });
@@ -217,14 +267,19 @@ async function api(req, res, url) {
   if (resource === 'settings' && method === 'PUT') {
     const b = await readJson(req);
     content.settings = { whatsapp: str(b.whatsapp, 20).replace(/\D/g, ''), phone: str(b.phone, 30), email: str(b.email, 120), rera: str(b.rera, 60), address1: str(b.address1, 200), address2: str(b.address2, 200) };
-    writeContent(content); return send(res, 200, content.settings);
+    writeContent(content); audit(req, 'settings-update'); return send(res, 200, content.settings);
   }
   if (resource === 'password' && method === 'POST') {
     const b = await readJson(req);
     if (!checkPassword(String(b.current || ''))) return send(res, 400, { error: 'Current password is wrong' });
-    if (String(b.next || '').length < 8) return send(res, 400, { error: 'New password must be at least 8 characters' });
-    admin = hashPassword(String(b.next)); fs.writeFileSync(ADMIN_FILE, JSON.stringify(admin), { mode: 0o600 });
-    return send(res, 200, { ok: true });
+    const next = String(b.next || '');
+    if (next.length < 8 || next.length > 10) return send(res, 400, { error: 'New password must be 8 to 10 characters' });
+    if (!/[a-zA-Z]/.test(next) || !/\d/.test(next)) return send(res, 400, { error: 'Use at least one letter and one number' });
+    if (next === String(b.current)) return send(res, 400, { error: 'New password must be different from the current one' });
+    admin = Object.assign(hashPassword(next), { v: (admin.v || 0) + 1 }); fs.writeFileSync(ADMIN_FILE, JSON.stringify(admin), { mode: 0o600 });
+    audit(req, 'password-changed');
+    // every existing session (including this one) is now invalid; the panel asks for a fresh sign-in
+    return send(res, 200, { ok: true, reauth: true }, { 'Set-Cookie': `${COOKIE}=; ${cookieFlags(req)}; Max-Age=0` });
   }
   if (resource === 'upload' && method === 'POST') {
     const b = await readJson(req);
@@ -232,8 +287,10 @@ async function api(req, res, url) {
     if (!['.jpg', '.jpeg', '.png', '.webp', '.gif', '.pdf'].includes(ext)) return send(res, 400, { error: 'Only jpg, png, webp, gif or pdf' });
     const buf = Buffer.from(String(b.data || '').replace(/^data:[^;]+;base64,/, ''), 'base64');
     if (!buf.length || buf.length > 6 * 1024 * 1024) return send(res, 400, { error: 'File is empty or over 6 MB' });
+    if (buf.length < 12 || !MAGIC[ext](buf)) return send(res, 400, { error: 'File content does not match its type' });
     const name = `${Date.now().toString(36)}-${crypto.randomBytes(3).toString('hex')}${ext}`;
     fs.writeFileSync(path.join(UPLOAD_DIR, name), buf);
+    audit(req, 'upload', name);
     return send(res, 200, { url: `assets/uploads/${name}` });
   }
 
@@ -246,16 +303,16 @@ async function api(req, res, url) {
   if (method === 'POST' && !id) {
     const b = await readJson(req);
     const item = clean(b); item.id = newId(prefix); item.slug = uniqueSlug(list, item.slug, item.id);
-    list.unshift(item); writeContent(content); return send(res, 201, item);
+    list.unshift(item); writeContent(content); audit(req, `${listKey}-create`, item.id); return send(res, 201, item);
   }
   const idx = list.findIndex(x => x.id === id);
   if (idx < 0) return send(res, 404, { error: 'Not found' });
   if (method === 'PUT') {
     const b = await readJson(req);
     const item = clean(b, list[idx]); item.id = id; item.slug = uniqueSlug(list, item.slug, id);
-    list[idx] = item; writeContent(content); return send(res, 200, item);
+    list[idx] = item; writeContent(content); audit(req, `${listKey}-update`, id); return send(res, 200, item);
   }
-  if (method === 'DELETE') { list.splice(idx, 1); writeContent(content); return send(res, 200, { ok: true }); }
+  if (method === 'DELETE') { list.splice(idx, 1); writeContent(content); audit(req, `${listKey}-delete`, id); return send(res, 200, { ok: true }); }
   return send(res, 405, { error: 'Method not allowed' });
 }
 
@@ -274,7 +331,9 @@ function serveStatic(req, res, url) {
     const ext = path.extname(file).toLowerCase();
     const type = MIME[ext] || 'application/octet-stream';
     const cache = ext === '.html' || ext === '.json' ? 'no-cache' : 'public, max-age=3600';
-    res.writeHead(200, { 'Content-Type': type, 'Content-Length': st.size, 'Cache-Control': cache, 'X-Content-Type-Options': 'nosniff' });
+    const isAdminPath = rel.replace(/\\/g, '/').replace(/^\/+/, '').startsWith('admin/');
+    const extra = isAdminPath ? Object.assign({ 'Content-Security-Policy': ADMIN_CSP }, SECURITY_HEADERS) : { 'Referrer-Policy': 'strict-origin-when-cross-origin' };
+    res.writeHead(200, Object.assign({ 'Content-Type': type, 'Content-Length': st.size, 'Cache-Control': cache, 'X-Content-Type-Options': 'nosniff' }, extra));
     fs.createReadStream(file).pipe(res);
   });
 }

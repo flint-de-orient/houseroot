@@ -1,0 +1,4 @@
+data/admin.json
+data/secret.key
+data/content.json.tmp
+node_modules/

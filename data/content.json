@@ -1,0 +1,353 @@
+{
+  "settings": {
+    "whatsapp": "912356987456",
+    "phone": "8858585856",
+    "email": "hello@flintdeorient.in",
+    "rera": "evvsdvvevcvcsvdv",
+    "address1": "sdfvsdvsvsvsv",
+    "address2": "vd dv dv dfv"
+  },
+  "projects": [
+    {
+      "id": "p1",
+      "slug": "sample-new-town-launch",
+      "name": "[Project name]",
+      "locality": "New Town",
+      "city": "Kolkata",
+      "address": "[Street / Block], New Town, Kolkata",
+      "developer": "[Developer]",
+      "tag": "New launch",
+      "status": "new-launch",
+      "mode": "buy",
+      "featured": true,
+      "published": true,
+      "price": "₹[XX] L",
+      "priceLakh": 65,
+      "pricePerSqft": "₹[X,XXX] / sq ft · all-inclusive quote on request",
+      "config": "2 & 3 BHK",
+      "carpet": "[XXX]–[XXXX] sq ft",
+      "possession": "[Month Year]",
+      "possessionYear": 2028,
+      "towers": "[X] · G+[XX]",
+      "rera": "WB/XXXXX",
+      "chips": [
+        "2 & 3 BHK",
+        "[XXX]–[XXXX] sq ft",
+        "Possession [Year]",
+        "RERA ✓"
+      ],
+      "about": "[Two or three sentences in HouseRoot's voice: who this project suits, what stands out on a site visit, and the one thing a buyer should know before booking.]",
+      "developerNote": "[Developer track record: previous projects delivered in Kolkata, typical delay history, construction quality notes.]",
+      "units": [
+        {
+          "type": "2 BHK",
+          "carpet": "[XXX] sq ft",
+          "builtup": "[XXXX] sq ft",
+          "facing": "East / North",
+          "price": "₹[XX] L"
+        },
+        {
+          "type": "3 BHK",
+          "carpet": "[XXXX] sq ft",
+          "builtup": "[XXXX] sq ft",
+          "facing": "East / South",
+          "price": "₹[XX] L"
+        },
+        {
+          "type": "3 BHK + study",
+          "carpet": "[XXXX] sq ft",
+          "builtup": "[XXXX] sq ft",
+          "facing": "Corner",
+          "price": "₹[X.X] Cr"
+        }
+      ],
+      "amenities": [
+        "Clubhouse",
+        "Swimming pool",
+        "Gym",
+        "24×7 security",
+        "Landscaped garden",
+        "Covered parking",
+        "Power backup",
+        "Kids' play area"
+      ],
+      "nearby": [
+        {
+          "label": "[Nearest metro] station",
+          "value": "[X.X] km"
+        },
+        {
+          "label": "[School name]",
+          "value": "[X.X] km"
+        },
+        {
+          "label": "[Hospital name]",
+          "value": "[X.X] km"
+        },
+        {
+          "label": "[IT hub / Sector V]",
+          "value": "[XX] min"
+        },
+        {
+          "label": "Airport",
+          "value": "[XX] min"
+        }
+      ],
+      "verdict": {
+        "goodFor": "[end-users wanting metro access under ₹[XX] L]",
+        "liked": [
+          "[Point]",
+          "[Point]",
+          "[Point]"
+        ],
+        "watch": [
+          "[Point]",
+          "[Point]"
+        ]
+      },
+      "advisor": "[Advisor name]",
+      "walkedOn": "[Month Year]",
+      "images": [],
+      "mapEmbed": ""
+    },
+    {
+      "id": "p2",
+      "slug": "sample-em-bypass-ready",
+      "name": "[Project name]",
+      "locality": "EM Bypass",
+      "city": "Kolkata",
+      "address": "[Street / Block], EM Bypass, Kolkata",
+      "developer": "[Developer]",
+      "tag": "Ready to move",
+      "status": "ready",
+      "mode": "buy",
+      "featured": true,
+      "published": true,
+      "price": "₹[X.X] Cr",
+      "priceLakh": 140,
+      "pricePerSqft": "",
+      "config": "3 & 4 BHK",
+      "carpet": "[XXXX]–[XXXX] sq ft",
+      "possession": "Ready",
+      "possessionYear": 2026,
+      "towers": "",
+      "rera": "WB/XXXXX",
+      "chips": [
+        "3 & 4 BHK",
+        "OC received",
+        "Bank-approved",
+        "RERA ✓"
+      ],
+      "about": "",
+      "developerNote": "",
+      "units": [],
+      "amenities": [],
+      "nearby": [],
+      "verdict": {
+        "goodFor": "",
+        "liked": [],
+        "watch": []
+      },
+      "advisor": "",
+      "walkedOn": "",
+      "images": [],
+      "mapEmbed": ""
+    },
+    {
+      "id": "p3",
+      "slug": "sample-salt-lake-under-construction",
+      "name": "[Project name]",
+      "locality": "Salt Lake",
+      "city": "Kolkata",
+      "address": "[Street / Block], Salt Lake, Kolkata",
+      "developer": "[Developer]",
+      "tag": "Under construction",
+      "status": "under-construction",
+      "mode": "buy",
+      "featured": false,
+      "published": true,
+      "price": "₹[XX] L",
+      "priceLakh": 48,
+      "pricePerSqft": "",
+      "config": "2 BHK",
+      "carpet": "[XXX] sq ft",
+      "possession": "[Year]",
+      "possessionYear": 2027,
+      "towers": "",
+      "rera": "WB/XXXXX",
+      "chips": [
+        "2 BHK",
+        "[XXX] sq ft",
+        "Metro 600 m",
+        "RERA ✓"
+      ],
+      "about": "",
+      "developerNote": "",
+      "units": [],
+      "amenities": [],
+      "nearby": [],
+      "verdict": {
+        "goodFor": "",
+        "liked": [],
+        "watch": []
+      },
+      "advisor": "",
+      "walkedOn": "",
+      "images": [],
+      "mapEmbed": ""
+    },
+    {
+      "id": "p4",
+      "slug": "sample-joka-offer",
+      "name": "[Project name]",
+      "locality": "Joka",
+      "city": "Kolkata",
+      "address": "[Street / Block], Joka, Kolkata",
+      "developer": "[Developer]",
+      "tag": "Offer running",
+      "status": "under-construction",
+      "mode": "buy",
+      "featured": false,
+      "published": true,
+      "price": "₹[XX] L",
+      "priceLakh": 42,
+      "pricePerSqft": "",
+      "config": "2 & 3 BHK",
+      "carpet": "",
+      "possession": "[Year]",
+      "possessionYear": 2027,
+      "towers": "",
+      "rera": "WB/XXXXX",
+      "chips": [
+        "2 & 3 BHK",
+        "Clubhouse",
+        "Possession [Year]",
+        "RERA ✓"
+      ],
+      "about": "",
+      "developerNote": "",
+      "units": [],
+      "amenities": [],
+      "nearby": [],
+      "verdict": {
+        "goodFor": "",
+        "liked": [],
+        "watch": []
+      },
+      "advisor": "",
+      "walkedOn": "",
+      "images": [],
+      "mapEmbed": ""
+    },
+    {
+      "id": "p5",
+      "slug": "sample-rajarhat-villas",
+      "name": "[Project name]",
+      "locality": "Rajarhat",
+      "city": "Kolkata",
+      "address": "[Street / Block], Rajarhat, Kolkata",
+      "developer": "[Developer]",
+      "tag": "Villas",
+      "status": "new-launch",
+      "mode": "buy",
+      "featured": true,
+      "published": true,
+      "price": "₹[X.X] Cr",
+      "priceLakh": 220,
+      "pricePerSqft": "",
+      "config": "4 BHK villas",
+      "carpet": "[XXXX] sq ft",
+      "possession": "[Year]",
+      "possessionYear": 2028,
+      "towers": "",
+      "rera": "WB/XXXXX",
+      "chips": [
+        "4 BHK villas",
+        "[XXXX] sq ft",
+        "Gated",
+        "RERA ✓"
+      ],
+      "about": "",
+      "developerNote": "",
+      "units": [],
+      "amenities": [],
+      "nearby": [],
+      "verdict": {
+        "goodFor": "",
+        "liked": [],
+        "watch": []
+      },
+      "advisor": "",
+      "walkedOn": "",
+      "images": [],
+      "mapEmbed": ""
+    },
+    {
+      "id": "p6",
+      "slug": "sample-howrah-ready",
+      "name": "[Project name]",
+      "locality": "Howrah",
+      "city": "Howrah",
+      "address": "[Street / Block], Howrah",
+      "developer": "[Developer]",
+      "tag": "Ready to move",
+      "status": "ready",
+      "mode": "buy",
+      "featured": false,
+      "published": true,
+      "price": "₹[XX] L",
+      "priceLakh": 55,
+      "pricePerSqft": "",
+      "config": "2 & 3 BHK",
+      "carpet": "",
+      "possession": "Ready",
+      "possessionYear": 2026,
+      "towers": "",
+      "rera": "WB/XXXXX",
+      "chips": [
+        "2 & 3 BHK",
+        "OC received",
+        "Riverside",
+        "RERA ✓"
+      ],
+      "about": "",
+      "developerNote": "",
+      "units": [],
+      "amenities": [],
+      "nearby": [],
+      "verdict": {
+        "goodFor": "",
+        "liked": [],
+        "watch": []
+      },
+      "advisor": "",
+      "walkedOn": "",
+      "images": [],
+      "mapEmbed": ""
+    }
+  ],
+  "posts": [
+    {
+      "id": "b1",
+      "slug": "new-town-vs-salt-lake-where-to-buy-in-2026",
+      "title": "New Town vs Salt Lake: where should a first-time buyer look in 2026?",
+      "date": "2026-11-01",
+      "author": "HouseRoot team",
+      "cover": "",
+      "excerpt": "Metro access, school density, flooding history and price per sq ft, compared block by block for the two localities buyers ask us about most.",
+      "body": "## The short answer\n\nIf you need possession within a year, Salt Lake's resale stock wins. If you can wait and want a newer building with amenities, New Town's Action Area II and III launches are better value per sq ft.\n\n## What we compared\n\n- **Metro**: walking distance to the nearest operational station\n- **Schools**: count within 3 km\n- **Water-logging**: history over the last five monsoons\n- **Price**: carpet-area price per sq ft on the last ten deals we closed\n\n> We're paid by the developer, so the price you pay is the same as walking in directly. Our verdict is still ours.\n\n*Replace this sample post from the admin panel.*",
+      "published": true
+    },
+    {
+      "id": "b2",
+      "slug": "what-rera-registration-actually-protects",
+      "title": "What RERA registration actually protects you from (and what it doesn't)",
+      "date": "2026-10-20",
+      "author": "HouseRoot team",
+      "cover": "",
+      "excerpt": "A registration number is not a guarantee. Here is what to check on the WBRERA portal before you pay a booking amount.",
+      "body": "## What it covers\n\n1. The project must deposit 70% of collections in a separate account\n2. Carpet area has a legal definition\n3. Delay compensation is enforceable\n\n## What it does not cover\n\nConstruction quality, the developer's track record on earlier projects, or whether the approach road is actually built. That is what a site visit is for.\n\n*Replace this sample post from the admin panel.*",
+      "published": true
+    }
+  ]
+}

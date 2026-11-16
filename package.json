@@ -1,0 +1,10 @@
+{
+  "name": "houseroot-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HouseRoot website with a dependency-free content server and admin panel.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": { "node": ">=18" }
+}

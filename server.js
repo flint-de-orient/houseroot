@@ -30,7 +30,7 @@ const MAX_BODY = 8 * 1024 * 1024;
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-  '.webp': 'image/webp', '.svg': 'image/svg+xml', '.gif': 'image/gif', '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8',
+  '.webp': 'image/webp', '.svg': 'image/svg+xml', '.gif': 'image/gif', '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8', '.xml': 'application/xml; charset=utf-8',
   '.woff2': 'font/woff2', '.woff': 'font/woff', '.map': 'application/json', '.pdf': 'application/pdf', '.mp4': 'video/mp4'
 };
 
@@ -339,7 +339,9 @@ function serveStatic(req, res, url) {
 }
 
 http.createServer(async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  // A malformed path (e.g. "//") or Host header makes new URL() throw; answer 400 instead of crashing the process.
+  let url;
+  try { url = new URL(req.url, 'http://localhost'); } catch { return send(res, 400, 'Bad request'); }
   try {
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
     if (url.pathname === '/data/content.json') {

@@ -51,7 +51,8 @@
   const CHECK = '<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>';
 
   HR.card = function (p) {
-    const img = p.images && p.images[0] ? `<img src="${esc(p.images[0])}" alt="${esc(p.name)}" loading="lazy">` : 'Add project photo';
+    const alt = [p.name, p.config, p.locality && 'in ' + p.locality + ', Kolkata'].filter(Boolean).join(' – ');
+    const img = p.images && p.images[0] ? `<img src="${esc(p.images[0])}" alt="${esc(alt)}" loading="lazy">` : 'Add project photo';
     const chips = (p.chips && p.chips.length ? p.chips : [p.config, p.carpet, p.possession && 'Possession ' + p.possession, 'RERA ✓']).filter(Boolean).slice(0, 4);
     return `<article class="pcard" data-id="${esc(p.id)}">
   <div class="photo">${img}<span class="tag${tagClass(p.tag)}">${esc(p.tag || 'New launch')}</span><button type="button" class="save" aria-label="Save project" aria-pressed="false">${HEART}</button></div>
@@ -154,6 +155,15 @@
     if (list.length) { grid.innerHTML = list.map(HR.card).join(''); bindHearts(grid); }
   }
 
+  /* Location landing pages: <div data-loc-grid="new town|newtown"> shows projects whose locality/address matches.
+     If nothing matches, the static "being added" card in the HTML stays. */
+  function locationGrid(c) {
+    const grid = $('[data-loc-grid]'); if (!grid) return;
+    const terms = grid.dataset.locGrid.toLowerCase().split('|').map(t => t.trim()).filter(Boolean);
+    const list = c.projects.filter(p => { const hay = `${p.locality} ${p.address}`.toLowerCase(); return terms.some(t => hay.includes(t)); });
+    if (list.length) { grid.innerHTML = list.map(HR.card).join(''); bindHearts(grid); }
+  }
+
   function setText(sel, v) { const el = $(`[data-p="${sel}"]`); if (el && v != null && v !== '') el.textContent = v; return el; }
   function projectPage(c) {
     if (!$('[data-p="name"]')) return;
@@ -210,14 +220,14 @@
     if (!p) { el.innerHTML = '<p class="lede">Post not found. <a href="blog.html">Back to the blog</a>.</p>'; return; }
     document.title = `${p.title} · HouseRoot`;
     el.innerHTML = `<div class="stack" style="gap:12px"><span class="eyebrow">Blog</span><h1 class="h-2">${esc(p.title)}</h1><span class="post-card__meta">${esc(fmtDate(p.date))}${p.author ? ' · ' + esc(p.author) : ''}</span></div>
-${p.cover ? `<div class="photo post-cover"><img src="${esc(p.cover)}" alt=""></div>` : ''}
+${p.cover ? `<div class="photo post-cover"><img src="${esc(p.cover)}" alt="${esc(p.title)}"></div>` : ''}
 <div class="prose">${HR.md(p.body)}</div>
 <div class="row" style="gap:12px;flex-wrap:wrap;padding-top:8px"><a href="blog.html" class="btn btn--outline btn--sm">← All posts</a><a href="contact.html" class="btn btn--sm">Talk to an advisor</a></div>`;
   }
 
   function applySettings(c) {
     const s = c.settings || {};
-    if (s.whatsapp) $$('a[href*="wa.me/91XXXXXXXXXX"]').forEach(a => a.href = `https://wa.me/${s.whatsapp}`);
+    if (s.whatsapp) $$('a[href^="https://wa.me/"]').forEach(a => a.href = `https://wa.me/${s.whatsapp}`);
     if (s.phone) $$('a[href^="tel:"]').forEach(a => { a.href = `tel:${s.phone.replace(/\s/g, '')}`; });
     const swap = (from, to) => { if (!to) return; const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); const nodes = []; while (walker.nextNode()) if (walker.currentNode.nodeValue.includes(from)) nodes.push(walker.currentNode); nodes.forEach(n => n.nodeValue = n.nodeValue.split(from).join(to)); };
     swap('[WB/XXXXX]', s.rera); swap('[+91 XXXXX XXXXX]', s.phone); swap('[Office address line 1]', s.address1); swap('[Line 2], Kolkata – [PIN]', s.address2);
@@ -225,6 +235,6 @@ ${p.cover ? `<div class="photo post-cover"><img src="${esc(p.cover)}" alt=""></d
 
   document.addEventListener('DOMContentLoaded', () => {
     if (document.body.classList.contains('admin')) return;
-    HR.load().then(c => { if (!c) return; applySettings(c); featured(c); projectsPage(c); projectPage(c); blogPage(c); postPage(c); });
+    HR.load().then(c => { if (!c) return; applySettings(c); featured(c); locationGrid(c); projectsPage(c); projectPage(c); blogPage(c); postPage(c); });
   });
 })();

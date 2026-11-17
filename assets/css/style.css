@@ -489,7 +489,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 
 /* ---------- Footer ---------- */
 .footer { background: var(--ink); color: #fff; }
-.footer__grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; }
+.footer__grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 40px; }
 .footer__brand p { font-size: 15px; line-height: 1.6; color: var(--on-dark-2); max-width: 360px; }
 .footer h4 { font: 600 13px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); }
 .footer__col { display: flex; flex-direction: column; gap: 12px; }

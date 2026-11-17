@@ -1,7 +1,16 @@
 #!/usr/bin/env python3
 """Generates the static HTML pages from shared partials. Run: python3 _build/build.py"""
-import os, pathlib
+import os, pathlib, json, datetime
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+# Live site address: used for canonical tags, Open Graph URLs, JSON-LD and sitemap.xml
+SITE = 'https://houseroot.in'
+EMAIL = 'sales@houseroot.in'
+PHONE_E164 = '+919230592846'
+OG_IMAGE = 'assets/img/hero-model.jpg'
+
+# Location landing pages: (file, short name for menus)
+LOCATIONS = [('new-town.html', 'New Town'), ('rajarhat.html', 'Rajarhat'), ('southern-bypass.html', 'Southern Bypass')]
 
 ICON = {
  'pin': '<svg aria-hidden="true" width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.3 7-12a7 7 0 1 0-14 0c0 5.7 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>',
@@ -25,23 +34,42 @@ ICON = {
 }
 def ic(name, s=20, c='#1A1A1A'): return ICON[name].format(s=s, c=c)
 
-def head(title, desc, dark=False):
+def jsonld(data):
+    return '<script type="application/ld+json">\n' + json.dumps(data, ensure_ascii=False, indent=1).replace('</', '<\\/') + '\n</script>\n'
+
+def head(title, desc, dark=False, path=None, full_title=None, keywords=None, schema=''):
+    """path: the page's URL path for canonical/og:url ('' = homepage). None = no canonical
+    (project.html and post.html change per ?id / ?slug, so a fixed canonical would be wrong)."""
+    t = full_title or f'{title} · HouseRoot'
+    url = None if path is None else f'{SITE}/{path}'
+    seo = ''
+    if keywords: seo += f'<meta name="keywords" content="{", ".join(keywords)}">\n'
+    if url: seo += f'<link rel="canonical" href="{url}">\n'
+    og = f'''<meta property="og:type" content="website">
+<meta property="og:site_name" content="HouseRoot">
+<meta property="og:locale" content="en_IN">
+<meta property="og:title" content="{t}">
+<meta property="og:description" content="{desc}">
+{f'<meta property="og:url" content="{url}">' + chr(10) if url else ''}<meta property="og:image" content="{SITE}/{OG_IMAGE}">
+<meta property="og:image:alt" content="Architectural model of a modern home on blueprints, by HouseRoot Kolkata">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{t}">
+<meta name="twitter:description" content="{desc}">
+<meta name="twitter:image" content="{SITE}/{OG_IMAGE}">'''
     return f'''<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{title} · HouseRoot</title>
+<title>{t}</title>
 <meta name="description" content="{desc}">
-<meta name="theme-color" content="{'#1A1A1A' if dark else '#F58220'}">
-<meta property="og:title" content="{title} · HouseRoot">
-<meta property="og:description" content="{desc}">
-<meta property="og:image" content="assets/img/hero-model.jpg">
-<link rel="icon" href="assets/img/logo.png">
+{seo}<meta name="theme-color" content="{'#1A1A1A' if dark else '#F58220'}">
+{og}
+{schema}<link rel="icon" href="assets/img/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=20261106d">
+<link rel="stylesheet" href="assets/css/style.css?v=20261117a">
 </head>
 <body>
 <div class="page"><div class="card-shell{' card-shell--dark' if dark else ''}">
@@ -58,7 +86,8 @@ def header(dark=False):
 <div class="drawer" aria-hidden="true"><div class="drawer__scrim"></div><div class="drawer__panel">
   <button class="drawer__close" aria-label="Close menu">×</button>
   <a href="index.html">Home</a><a href="projects.html">Buy</a><a href="projects.html#rent">Rent</a><a href="contact.html">Sell</a><a href="contact.html#agents">Find agent</a><a href="developers.html">List property</a><a href="blog.html">Blog</a><a href="about.html">About us</a>
-  <div class="drawer__cta"><a href="admin/" class="btn btn--block btn--outline">Login</a><a href="contact.html" class="btn btn--block">Request a call back</a><a href="https://wa.me/91XXXXXXXXXX" class="btn btn--block btn--dark">{ic('wa',18,'#7CD992')} WhatsApp us</a></div>
+  {''.join(f'<a href="{f}">{n}</a>' for f, n in LOCATIONS)}
+  <div class="drawer__cta"><a href="admin/" class="btn btn--block btn--outline">Login</a><a href="contact.html" class="btn btn--block">Request a call back</a><a href="https://wa.me/919230592846" class="btn btn--block btn--dark">{ic('wa',18,'#7CD992')} WhatsApp us</a></div>
 </div></div>
 '''
 
@@ -67,14 +96,15 @@ FOOTER = f'''<footer class="footer"><div class="inner section stack" style="gap:
     <div class="footer__brand stack" style="gap:18px"><img src="assets/img/logo-white.png" alt="HouseRoot" style="height:60px;width:auto;align-self:flex-start"><p>Connecting you to the home you love. A real estate channel partner brand by Flint De Orient Marketing &amp; Technology Pvt. Ltd., Kolkata.</p><span style="font-size:13px;color:#8A8A8A">RERA Reg. No. [WB/XXXXX]</span></div>
     <div class="footer__col"><h4>Explore</h4><a href="projects.html">New launches</a><a href="projects.html">Ready to move</a><a href="projects.html">Plots &amp; land</a><a href="projects.html">Commercial</a><a href="blog.html">Blog</a></div>
     <div class="footer__col"><h4>Company</h4><a href="about.html">About HouseRoot</a><a href="developers.html">For developers</a><a href="contact.html">Careers</a><a href="https://flintdeorient.in" target="_blank" rel="noopener">Flint De Orient</a></div>
-    <div class="footer__col"><h4>Visit</h4><span>[Office address line 1]<br>[Line 2], Kolkata – [PIN]</span><a href="mailto:hello@flintdeorient.in">hello@flintdeorient.in</a></div>
+    <div class="footer__col"><h4>Locations</h4>{''.join(f'<a href="{f}">{n}</a>' for f, n in LOCATIONS)}</div>
+    <div class="footer__col"><h4>Visit</h4><span>[Office address line 1]<br>[Line 2], Kolkata – [PIN]</span><a href="mailto:sales@houseroot.in">sales@houseroot.in</a></div>
   </div>
   <div class="footer__bottom"><span>© <span data-year>2026</span> HouseRoot · Flint De Orient Marketing &amp; Technology Pvt. Ltd.</span><div class="row" style="gap:24px"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">RERA disclaimer</a><a href="admin/" style="opacity:.55">Admin</a></div></div>
 </div></footer>
 </div></div>
-<a href="https://wa.me/91XXXXXXXXXX" class="wa-fab" aria-label="Chat on WhatsApp" target="_blank" rel="noopener">{ic('wa',26,'#fff')}</a>
-<script src="assets/js/main.js?v=20261106d" defer></script>
-<script src="assets/js/site-data.js?v=20261106d" defer></script>
+<a href="https://wa.me/919230592846" class="wa-fab" aria-label="Chat on WhatsApp" target="_blank" rel="noopener">{ic('wa',26,'#fff')}</a>
+<script src="assets/js/main.js?v=20261117a" defer></script>
+<script src="assets/js/site-data.js?v=20261117a" defer></script>
 </body>
 </html>
 '''
@@ -93,9 +123,27 @@ def pcard(name, loc, dev, chips, price, tag='New launch', tagcls=''):
 SUCCESS = '''<div class="form-success"><span style="width:64px;height:64px;border-radius:50%;background:#E8F7EC;display:inline-flex;align-items:center;justify-content:center">''' + ic('check',30,'#1E7A3C') + '''</span><strong class="h-4">Got it — we'll call you within the hour.</strong><span style="font-size:14px;color:#5A5A5A">Weekdays 10 am – 7 pm. Or WhatsApp us anytime.</span></div>'''
 
 # =============================== INDEX ===============================
-index = head('Home', 'HouseRoot is a RERA-registered real estate channel partner in Kolkata. Zero brokerage on new launches, one advisor from first call to possession.') + header() + f'''
+AGENT_SCHEMA = jsonld({
+    '@context': 'https://schema.org',
+    '@type': 'RealEstateAgent',
+    '@id': f'{SITE}/#agent',
+    'name': 'HouseRoot',
+    'url': f'{SITE}/',
+    'logo': f'{SITE}/assets/img/logo.png',
+    'image': f'{SITE}/{OG_IMAGE}',
+    'description': 'RERA-registered real estate channel partner in Kolkata for new launches and luxury projects in New Town, Rajarhat and Southern Bypass. Zero brokerage on new homes.',
+    'email': EMAIL,
+    'telephone': PHONE_E164,
+    'address': {'@type': 'PostalAddress', 'addressLocality': 'Kolkata', 'addressRegion': 'West Bengal', 'addressCountry': 'IN'},
+    'areaServed': [{'@type': 'City', 'name': 'Kolkata'}] + [{'@type': 'Place', 'name': f'{n}, Kolkata'} for _, n in LOCATIONS],
+    'contactPoint': {'@type': 'ContactPoint', 'telephone': PHONE_E164, 'email': EMAIL, 'contactType': 'sales', 'areaServed': 'IN', 'availableLanguage': ['English', 'Bengali', 'Hindi']},
+    'parentOrganization': {'@type': 'Organization', 'name': 'Flint De Orient Marketing & Technology Pvt. Ltd.', 'url': 'https://flintdeorient.in'},
+})
+
+index = head('Home', 'RERA-registered channel partner for new homes and luxury projects in New Town, Rajarhat and Southern Bypass, Kolkata. Zero brokerage on new launches.',
+             path='', full_title='New Homes in Kolkata, Zero Brokerage | HouseRoot', schema=AGENT_SCHEMA) + header() + f'''
 <section class="hero" id="top">
-  <div class="hero__art" aria-hidden="true"><picture><source srcset="assets/img/hero-model.webp" type="image/webp"><img class="hero__img" src="assets/img/hero-model.jpg" alt="" width="2200" height="1228" fetchpriority="high"></picture></div>
+  <div class="hero__art" aria-hidden="true"><picture><source srcset="assets/img/hero-model.webp" type="image/webp"><img class="hero__img" src="assets/img/hero-model.jpg" alt="Architectural model of a modern multi-storey home on blueprints, representing new launch projects in Kolkata" width="2200" height="1228" fetchpriority="high"></picture></div>
   <div class="inner hero__grid">
     <div class="hero__copy">
       <span class="eyebrow">New homes · Kolkata</span>
@@ -237,6 +285,15 @@ index = head('Home', 'HouseRoot is a RERA-registered real estate channel partner
   <div class="row" style="justify-content:center;gap:12px;flex-wrap:wrap" data-reveal><a href="contact.html" class="btn">Start with a 15-minute brief</a><a href="about.html" class="btn btn--outline">More about how we work</a></div>
 </div></section>
 
+<section class="section section--card" id="locations"><div class="inner stack" style="gap:40px">
+  <div class="stack" style="gap:14px;align-items:center;text-align:center" data-reveal><div class="rule"></div><h2 class="h-2">Explore homes by location</h2><p class="lede" style="max-width:620px">Our advisors track upcoming luxury projects in New Town, Rajarhat and Southern Bypass closely — prices, RERA status, possession dates and what each tower is really like on a site visit.</p></div>
+  <div class="grid-3" data-stagger>
+    <div class="value"><span class="value__n">East Kolkata</span><h3 class="h-4"><a href="new-town.html">New Town</a></h3><p>A planned township with wide roads, Eco Park and IT campuses next door. High-rise 2 and 3 BHK launches for end-users and investors.</p><a href="new-town.html" class="link">Projects in New Town {ic('arrow',16)}</a></div>
+    <div class="value"><span class="value__n">Near the airport</span><h3 class="h-4"><a href="rajarhat.html">Rajarhat</a></h3><p>Close to the airport and VIP Road, with gated communities and more space for the budget than central New Town.</p><a href="rajarhat.html" class="link">Projects in Rajarhat {ic('arrow',16)}</a></div>
+    <div class="value"><span class="value__n">South Kolkata</span><h3 class="h-4"><a href="southern-bypass.html">Southern Bypass</a></h3><p>New residential towers along the bypass corridor, linking established South Kolkata neighbourhoods with faster road access.</p><a href="southern-bypass.html" class="link">Projects near Southern Bypass {ic('arrow',16)}</a></div>
+  </div>
+</div></section>
+
 <section class="section section--ember" id="developers"><div class="chevron-bg chevron-bg--white" style="right:-160px;top:-140px;width:620px;height:620px"></div><div class="inner split" style="position:relative">
   <div class="stack" style="gap:20px" data-reveal="left">
     <span class="eyebrow">For developers</span>
@@ -257,8 +314,8 @@ index = head('Home', 'HouseRoot is a RERA-registered real estate channel partner
     <div class="rule"></div>
     <h2 class="h-2">Tell us what you're looking for. We'll call within the hour.</h2>
     <p class="lede" style="max-width:460px">Or message us on WhatsApp — most of our conversations start there.</p>
-    <a href="https://wa.me/91XXXXXXXXXX" class="contact-line"><span class="contact-line__ic">{ic('wa',20,'#fff')}</span>WhatsApp: [+91 XXXXX XXXXX]</a>
-    <a href="mailto:hello@flintdeorient.in" class="contact-line"><span class="contact-line__ic contact-line__ic--soft">{ic('mail',20,'#D14F00')}</span>hello@flintdeorient.in</a>
+    <a href="https://wa.me/919230592846" class="contact-line"><span class="contact-line__ic">{ic('wa',20,'#fff')}</span>WhatsApp: +91 92305 92846</a>
+    <a href="mailto:sales@houseroot.in" class="contact-line"><span class="contact-line__ic contact-line__ic--soft">{ic('mail',20,'#D14F00')}</span>sales@houseroot.in</a>
   </div>
   <form class="form-card" style="background:var(--card);box-shadow:none" data-lead data-reveal="right">
     <div class="form-grid"><div class="field"><label class="label" for="c-name">Your name</label><input class="input" id="c-name" name="name" type="text" placeholder="Priya Sen" required style="background:#fff"></div><div class="field"><label class="label" for="c-phone">Phone</label><input class="input" id="c-phone" name="phone" type="tel" placeholder="+91" required style="background:#fff"></div></div>
@@ -272,7 +329,7 @@ index = head('Home', 'HouseRoot is a RERA-registered real estate channel partner
 ''' + FOOTER
 
 # =============================== PROJECTS ===============================
-projects = head('Projects', 'RERA-registered new launches, ready-to-move flats, plots and villas across Kolkata — verified by HouseRoot.') + header() + f'''
+projects = head('Projects', 'RERA-registered new launches, ready-to-move flats, plots and villas across Kolkata — verified by HouseRoot.', path='projects.html') + header() + f'''
 <section class="inner stack" style="padding-top:24px;padding-bottom:40px;gap:28px">
   <div class="row" style="justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap">
     <div class="stack" style="gap:12px" data-reveal>
@@ -382,7 +439,7 @@ project = head('Project detail', 'Units, prices, amenities, location and the hon
       <label class="sr-only" for="d-phone">Phone</label><input class="input" id="d-phone" type="tel" placeholder="+91 phone" required>
       <label class="sr-only" for="d-type">Interested in</label><select class="select" id="d-type" data-p="unitselect"><option>Interested in: 2 BHK</option><option>Interested in: 3 BHK</option><option>Interested in: 3 BHK + study</option></select>
       <button type="submit" class="btn btn--block">Book a free site visit</button>
-      <a href="https://wa.me/91XXXXXXXXXX" class="btn btn--block btn--outline">{ic('wa',18,'#25A05A')} Chat on WhatsApp</a>
+      <a href="https://wa.me/919230592846" class="btn btn--block btn--outline">{ic('wa',18,'#25A05A')} Chat on WhatsApp</a>
       {SUCCESS}
     </form>
     <div class="stack" style="gap:8px;padding-top:12px;border-top:1px solid #EFEFEF;font-size:13px;color:#5A5A5A;line-height:1.5"><span>✓ Free pick-up &amp; drop for site visits</span><span>✓ Zero brokerage — developer pays us</span><span>✓ Home-loan help from [X] partner banks</span></div>
@@ -401,7 +458,7 @@ project = head('Project detail', 'Units, prices, amenities, location and the hon
 ''' + FOOTER
 
 # =============================== ABOUT ===============================
-about = head('About', 'HouseRoot is the friend who has walked every site — a RERA-registered channel partner from Kolkata, by Flint De Orient.') + header() + f'''
+about = head('About', 'HouseRoot is the friend who has walked every site — a RERA-registered channel partner from Kolkata, by Flint De Orient.', path='about.html') + header() + f'''
 <section class="inner split" style="padding-top:40px;padding-bottom:64px">
   <div class="stack" style="gap:24px" data-reveal="left">
     <div class="rule"></div>
@@ -460,7 +517,7 @@ about = head('About', 'HouseRoot is the friend who has walked every site — a R
 ''' + FOOTER
 
 # =============================== DEVELOPERS ===============================
-developers = head('For developers', 'List your Kolkata project with HouseRoot: qualified buyers, a live pipeline dashboard and WhatsApp automation — pay per registered booking.', dark=True) + header(dark=True) + f'''
+developers = head('For developers', 'List your Kolkata project with HouseRoot: qualified buyers, a live pipeline dashboard and WhatsApp automation — pay per registered booking.', dark=True, path='developers.html') + header(dark=True) + f'''
 <section class="inner" style="padding-top:40px;padding-bottom:72px;position:relative">
   <div class="chevron-bg" style="right:-200px;top:-120px"></div>
   <div class="split" style="position:relative">
@@ -531,16 +588,16 @@ developers = head('For developers', 'List your Kolkata project with HouseRoot: q
 ''' + FOOTER
 
 # =============================== CONTACT ===============================
-contact = head('Contact', 'Tell HouseRoot what you are looking for — we call back within the hour on weekdays. WhatsApp, phone, email or visit our Kolkata office.') + header() + f'''
+contact = head('Contact', 'Tell HouseRoot what you are looking for — we call back within the hour on weekdays. WhatsApp, phone, email or visit our Kolkata office.', path='contact.html') + header() + f'''
 <section class="inner split split--start" style="padding-top:40px;padding-bottom:72px">
   <div class="stack" style="gap:28px" data-reveal="left">
     <div class="rule"></div>
     <h1 class="h-1 words">Tell us <span class="muted">what you're</span> looking for.</h1>
     <p class="lede" style="font-size:16px;max-width:460px">We call back within the hour on weekdays, 10 am – 7 pm. Or skip the form — most of our conversations start on WhatsApp.</p>
     <div class="stack" style="gap:14px">
-      <a href="https://wa.me/91XXXXXXXXXX" class="btn btn--dark" style="align-self:flex-start">{ic('wa',18,'#7CD992')} WhatsApp [+91 XXXXX XXXXX]</a>
-      <a href="tel:+91XXXXXXXXXX" class="contact-line" style="gap:10px">{ic('phone',18,'#F26B0E')}Call [+91 XXXXX XXXXX]</a>
-      <a href="mailto:hello@flintdeorient.in" class="contact-line" style="gap:10px">{ic('mail',18,'#F26B0E')}hello@flintdeorient.in</a>
+      <a href="https://wa.me/919230592846" class="btn btn--dark" style="align-self:flex-start">{ic('wa',18,'#7CD992')} WhatsApp +91 92305 92846</a>
+      <a href="tel:+919230592846" class="contact-line" style="gap:10px">{ic('phone',18,'#F26B0E')}Call +91 92305 92846</a>
+      <a href="mailto:sales@houseroot.in" class="contact-line" style="gap:10px">{ic('mail',18,'#F26B0E')}sales@houseroot.in</a>
     </div>
     <div class="stack" style="gap:8px;padding-top:12px;border-top:1px solid #E6E6E6;max-width:460px"><strong style="font:600 15px var(--font-display)">Visit the office</strong><span style="line-height:1.6;color:#5A5A5A">[Office address line 1]<br>[Line 2], Kolkata – [PIN]<br>Mon–Sat · 10 am – 7 pm</span><a href="https://maps.google.com" target="_blank" rel="noopener" style="font-size:14px;font-weight:700">Open in Google Maps →</a></div>
   </div>
@@ -560,7 +617,7 @@ contact = head('Contact', 'Tell HouseRoot what you are looking for — we call b
   <div class="grid-3" data-stagger>
     <a href="projects.html" class="way"><span class="way__ic">{ic('cal',22,'#fff')}</span><strong class="h-4" style="font-size:16px">Book a site visit</strong><span>Pick a project, pick a slot — free pick-up and drop across Kolkata, weekends included.</span></a>
     <a href="developers.html" class="way"><span class="way__ic">{ic('doc',22,'#fff')}</span><strong class="h-4" style="font-size:16px">Developer partnerships</strong><span>Launching a project? Talk to our partnerships lead about listing and campaigns.</span></a>
-    <a href="mailto:hello@flintdeorient.in" class="way"><span class="way__ic">{ic('users',22,'#fff')}</span><strong class="h-4" style="font-size:16px">Careers</strong><span>We're hiring advisors who'd rather walk a site than cold-call. Send your CV.</span></a>
+    <a href="mailto:sales@houseroot.in" class="way"><span class="way__ic">{ic('users',22,'#fff')}</span><strong class="h-4" style="font-size:16px">Careers</strong><span>We're hiring advisors who'd rather walk a site than cold-call. Send your CV.</span></a>
   </div>
 </div></section>
 <section class="section section--card" id="agents"><div class="inner stack" style="gap:32px">
@@ -569,10 +626,10 @@ contact = head('Contact', 'Tell HouseRoot what you are looking for — we call b
     <div class="seg seg--sm" role="group" aria-label="Area" data-agent-filter><button type="button" class="is-on" data-value="all">All</button><button type="button" data-value="new town">New Town</button><button type="button" data-value="south">South</button><button type="button" data-value="salt lake">Salt Lake</button><button type="button" data-value="howrah">Howrah</button></div>
   </div>
   <div class="grid-4" data-stagger>
-    <div class="agent" data-area="new town"><div class="photo">Add headshot</div><div class="stack" style="gap:2px"><strong style="font:600 16px var(--font-display)">[Name]</strong><span style="font-size:13px;color:#7A7A7A">New Town &amp; Rajarhat · [X] yrs</span></div><span style="font-size:13px;color:#5A5A5A">Speaks Bengali, Hindi, English</span><a href="https://wa.me/91XXXXXXXXXX" class="btn btn--sm btn--dark">WhatsApp</a></div>
-    <div class="agent" data-area="south"><div class="photo">Add headshot</div><div class="stack" style="gap:2px"><strong style="font:600 16px var(--font-display)">[Name]</strong><span style="font-size:13px;color:#7A7A7A">EM Bypass &amp; South · [X] yrs</span></div><span style="font-size:13px;color:#5A5A5A">Speaks Bengali, Hindi, English</span><a href="https://wa.me/91XXXXXXXXXX" class="btn btn--sm btn--dark">WhatsApp</a></div>
-    <div class="agent" data-area="salt lake"><div class="photo">Add headshot</div><div class="stack" style="gap:2px"><strong style="font:600 16px var(--font-display)">[Name]</strong><span style="font-size:13px;color:#7A7A7A">Salt Lake &amp; Sector V · [X] yrs</span></div><span style="font-size:13px;color:#5A5A5A">Speaks Bengali, Hindi, English</span><a href="https://wa.me/91XXXXXXXXXX" class="btn btn--sm btn--dark">WhatsApp</a></div>
-    <div class="agent" data-area="howrah south"><div class="photo">Add headshot</div><div class="stack" style="gap:2px"><strong style="font:600 16px var(--font-display)">[Name]</strong><span style="font-size:13px;color:#7A7A7A">Howrah &amp; Joka · [X] yrs</span></div><span style="font-size:13px;color:#5A5A5A">Speaks Bengali, Hindi, English</span><a href="https://wa.me/91XXXXXXXXXX" class="btn btn--sm btn--dark">WhatsApp</a></div>
+    <div class="agent" data-area="new town"><div class="photo">Add headshot</div><div class="stack" style="gap:2px"><strong style="font:600 16px var(--font-display)">[Name]</strong><span style="font-size:13px;color:#7A7A7A">New Town &amp; Rajarhat · [X] yrs</span></div><span style="font-size:13px;color:#5A5A5A">Speaks Bengali, Hindi, English</span><a href="https://wa.me/919230592846" class="btn btn--sm btn--dark">WhatsApp</a></div>
+    <div class="agent" data-area="south"><div class="photo">Add headshot</div><div class="stack" style="gap:2px"><strong style="font:600 16px var(--font-display)">[Name]</strong><span style="font-size:13px;color:#7A7A7A">EM Bypass &amp; South · [X] yrs</span></div><span style="font-size:13px;color:#5A5A5A">Speaks Bengali, Hindi, English</span><a href="https://wa.me/919230592846" class="btn btn--sm btn--dark">WhatsApp</a></div>
+    <div class="agent" data-area="salt lake"><div class="photo">Add headshot</div><div class="stack" style="gap:2px"><strong style="font:600 16px var(--font-display)">[Name]</strong><span style="font-size:13px;color:#7A7A7A">Salt Lake &amp; Sector V · [X] yrs</span></div><span style="font-size:13px;color:#5A5A5A">Speaks Bengali, Hindi, English</span><a href="https://wa.me/919230592846" class="btn btn--sm btn--dark">WhatsApp</a></div>
+    <div class="agent" data-area="howrah south"><div class="photo">Add headshot</div><div class="stack" style="gap:2px"><strong style="font:600 16px var(--font-display)">[Name]</strong><span style="font-size:13px;color:#7A7A7A">Howrah &amp; Joka · [X] yrs</span></div><span style="font-size:13px;color:#5A5A5A">Speaks Bengali, Hindi, English</span><a href="https://wa.me/919230592846" class="btn btn--sm btn--dark">WhatsApp</a></div>
   </div>
 </div></section>
 <section class="section section--white"><div class="inner" style="display:grid;grid-template-columns:1fr 1.4fr;gap:56px;align-items:start" id="faq-grid">
@@ -604,10 +661,148 @@ POST_BODY = '''<section class="inner" style="padding-top:40px;padding-bottom:72p
 </section>
 
 '''
-blog = head('Blog', 'Locality comparisons, buying checklists and field notes from HouseRoot, Kolkata.') + header() + BLOG_BODY + FOOTER
+blog = head('Blog', 'Locality comparisons, buying checklists and field notes from HouseRoot, Kolkata.', path='blog.html') + header() + BLOG_BODY + FOOTER
 post = head('Blog post', 'A HouseRoot blog post.') + header() + POST_BODY + FOOTER
 
-pages = {'index.html': index, 'blog.html': blog, 'post.html': post, 'projects.html': projects, 'project.html': project, 'about.html': about, 'developers.html': developers, 'contact.html': contact}
+# =============================== LOCATION PAGES ===============================
+def loc_page(file, name, full_title, desc, keywords, h1, eyebrow, intro, alt, sections, grid_h2, grid_intro, terms, faqs):
+    others = ' · '.join(f'<a href="{f}" class="link">{n}</a>' for f, n in LOCATIONS if f != file)
+    body_html = '\n'.join(f'    <h2 class="h-3" style="font-size:20px;margin-top:12px">{h}</h2>\n' + '\n'.join(f'    <p>{p}</p>' for p in ps) for h, ps in sections)
+    faq_html = '\n'.join(f'    <details{" open" if i == 0 else ""}><summary>{q}</summary><div class="faq__body"><p>{a}</p></div></details>' for i, (q, a) in enumerate(faqs))
+    schema = jsonld({'@context': 'https://schema.org', '@graph': [
+        {'@type': 'BreadcrumbList', 'itemListElement': [
+            {'@type': 'ListItem', 'position': 1, 'name': 'Home', 'item': f'{SITE}/'},
+            {'@type': 'ListItem', 'position': 2, 'name': name, 'item': f'{SITE}/{file}'}]},
+        {'@type': 'FAQPage', 'mainEntity': [{'@type': 'Question', 'name': q, 'acceptedAnswer': {'@type': 'Answer', 'text': a}} for q, a in faqs]},
+    ]})
+    return head(name, desc, path=file, full_title=full_title, keywords=keywords, schema=schema) + header() + f'''
+<section class="inner split" style="padding-top:40px;padding-bottom:64px">
+  <div class="stack" style="gap:22px" data-reveal="left">
+    <span style="font-size:13px;color:#7A7A7A"><a href="index.html" style="color:#7A7A7A">Home</a> &nbsp;/&nbsp; <span style="color:#1A1A1A;font-weight:600">{name}</span></span>
+    <span class="eyebrow">{eyebrow}</span>
+    <h1 class="h-1">{h1}</h1>
+    <p class="lede" style="max-width:540px">{intro}</p>
+    <div class="row" style="gap:12px;flex-wrap:wrap"><a href="#projects" class="btn">See projects</a><a href="contact.html" class="btn btn--outline">Talk to an advisor</a></div>
+  </div>
+  <div class="photo" style="height:420px" data-reveal="right"><picture style="display:block;width:100%;height:100%"><source srcset="assets/img/hero-model.webp" type="image/webp"><img src="assets/img/hero-model.jpg" alt="{alt}" width="2200" height="1228"></picture></div>
+</section>
+<section class="section section--white section--top-round"><div class="inner">
+  <div class="prose" style="max-width:780px;margin:0 auto" data-reveal>
+{body_html}
+  </div>
+</div></section>
+<section class="section section--card" id="projects"><div class="inner stack" style="gap:36px">
+  <div class="stack" style="gap:14px;align-items:center;text-align:center" data-reveal><div class="rule"></div><h2 class="h-2">{grid_h2}</h2><p class="lede" style="max-width:620px">{grid_intro}</p></div>
+  <div class="grid-3" data-stagger data-loc-grid="{terms}">
+    <div class="value" style="grid-column:1 / -1;align-items:center;text-align:center"><h3 class="h-4">Verified projects in {name} are being added</h3><p>Ask an advisor for today's shortlist with prices, RERA numbers and possession dates.</p><a href="contact.html" class="btn btn--sm">Get the shortlist</a></div>
+  </div>
+</div></section>
+<section class="section section--white"><div class="inner split split--start">
+  <div class="stack" style="gap:16px" data-reveal="left"><div class="rule"></div><h2 class="h-2">Questions buyers ask about {name}</h2><p class="lede">Also compare: {others}</p></div>
+  <div class="faq stack" style="gap:10px;background:var(--card);border-radius:28px;padding:14px" data-reveal="right">
+{faq_html}
+  </div>
+</div></section>
+<section class="section section--ember"><div class="inner row" style="justify-content:space-between;gap:32px;flex-wrap:wrap" data-reveal>
+  <div class="stack" style="gap:8px;max-width:620px"><h2 class="h-2">Looking in {name}? Tell us your brief.</h2><span style="opacity:.92">We'll call within the hour on weekdays. Zero brokerage on new launches.</span></div>
+  <a href="contact.html" class="btn btn--white">Talk to an advisor</a>
+</div></section>
+''' + FOOTER
+
+FAQ_BROKERAGE = ('Do I pay brokerage on new launches?', 'No. On new launches the developer pays our fee, so your price is the same as booking directly, and we negotiate on your behalf.')
+FAQ_RERA = ('How do I check a project\'s RERA registration?', 'Every project we list has a West Bengal RERA (WBRERA) registration number. We share it with you, and you can verify it on the WBRERA website before you book.')
+
+new_town = loc_page('new-town.html', 'New Town',
+    'Upcoming Luxury Projects in New Town Kolkata | HouseRoot',
+    'Upcoming luxury projects in New Town Kolkata, verified by HouseRoot: 2 & 3 BHK flats in gated high-rises, RERA checked, with zero brokerage.',
+    ['Upcoming luxury projects in New Town Kolkata', 'Upcoming residential projects New Town', 'Luxury apartments in New Town Kolkata', 'Premium flats in New Town', 'Upcoming 2 BHK flats in New Town', 'Upcoming 3 BHK flats in New Town', 'Luxury 2 BHK apartments New Town', 'Luxury 3 BHK apartments New Town', 'New launch residential projects New Town', 'Premium gated community New Town', 'High-rise luxury apartments New Town'],
+    'Upcoming luxury projects in New Town Kolkata', 'New Town · East Kolkata',
+    'New Town is where much of Kolkata\'s new housing is being built: a planned township on the city\'s eastern edge with wide roads and offices a short drive away. These are the upcoming luxury projects in New Town Kolkata our team has visited, with honest notes on price, possession and build quality.',
+    'Architectural model of a modern multi-storey residence on blueprints, illustrating new luxury homes in New Town, Kolkata',
+    [('Luxury apartments in New Town Kolkata', [
+        'New Town was planned from scratch, and it shows. Action Areas I, II and III are laid out around Biswa Bangla Sarani and the Major Arterial Road, so most new towers have proper approach roads, drainage and space between buildings. Eco Park, Tata Medical Center, well-known schools and the IT offices of New Town and Salt Lake Sector V are within a short drive, and the airport is closer than from most of the city.',
+        'That planning is why many buyers start their search here. The upcoming residential projects New Town developers are launching now lean towards larger floor plates, full clubhouses, and touches like double-height lobbies and EV charging. Premium flats in New Town still cost less per square foot than comparable homes in central and south Kolkata, which keeps the area popular with families and investors alike.']),
+     ('Upcoming 2 BHK flats in New Town', [
+        'A two-bedroom home is the most common first purchase we help with here. Upcoming 2 BHK flats in New Town vary a lot in size and finish from tower to tower, so we compare them on carpet area rather than super built-up area. If you want a step up, the luxury 2 BHK apartments New Town developers are building now add larger balconies, branded fittings and a club with a pool and gym.']),
+     ('Upcoming 3 BHK flats in New Town', [
+        'Families planning for school years, or parents moving in, usually look at three bedrooms. Upcoming 3 BHK flats in New Town are offered in mid-segment towers and at the top end, where the luxury 3 BHK apartments New Town is known for come with staff rooms, separate utility areas and higher floors with open views. Before you shortlist, we check orientation, ceiling height, lifts per tower and the real monthly maintenance.']),
+     ('Premium gated community homes in New Town', [
+        'Most new launches are planned as a premium gated community New Town families can live in with security, landscaped greens and amenities inside one boundary wall. High-rise luxury apartments New Town projects are increasingly built over podium parking, so the ground level stays car-free for children and walkers. A larger community spreads maintenance costs across more homes, but also means more neighbours sharing the pool and the lifts, and we help you weigh both.'])],
+    'New launch residential projects in New Town',
+    'We add the new launch residential projects New Town developers announce only after our team has visited the site and checked its RERA registration. Prices change quickly, so call before you visit.',
+    'new town|newtown',
+    [('Is New Town a good place to buy a home?', 'For most buyers who work in New Town or Salt Lake Sector V, yes. Roads, water and power were planned for the township, and new schools, hospitals and shops keep opening. Some pockets are still developing, so the exact block matters more than the area name.'),
+     FAQ_BROKERAGE, FAQ_RERA])
+
+rajarhat = loc_page('rajarhat.html', 'Rajarhat',
+    'Upcoming Luxury Projects in Rajarhat Kolkata | HouseRoot',
+    'Upcoming luxury projects in Rajarhat Kolkata near the airport: RERA-checked 2 & 3 BHK flats in gated high-rises. Zero brokerage with HouseRoot.',
+    ['Upcoming luxury projects in Rajarhat Kolkata', 'Upcoming residential projects in Rajarhat', 'Luxury flats in Rajarhat Kolkata', 'Premium apartments in Rajarhat', 'Upcoming 2 BHK projects in Rajarhat', 'Upcoming 3 BHK projects in Rajarhat', 'Luxury 2 BHK flats in Rajarhat', 'Luxury 3 BHK flats in Rajarhat', 'New launch projects in Rajarhat', 'Premium high-rise apartments Rajarhat', 'RERA registered upcoming projects Rajarhat', 'Luxury gated community in Rajarhat'],
+    'Upcoming luxury projects in Rajarhat Kolkata', 'Rajarhat · Near the airport',
+    'Rajarhat sits between the airport and New Town, and over the last two decades it has grown from open land into one of Kolkata\'s busiest residential belts. These are the upcoming luxury projects in Rajarhat Kolkata our advisors are tracking, with straight answers on price, possession and travel times.',
+    'Scale model of a contemporary luxury home on architect\'s drawings, representing new homes in Rajarhat, Kolkata',
+    [('Luxury flats in Rajarhat Kolkata', [
+        'The appeal is simple. The airport, VIP Road and the offices of New Town are all close, but land here has usually cost less than in the core township. That lets developers plan larger sites with more open area, and it means luxury flats in Rajarhat Kolkata often give you more space for the same budget. Chinar Park, Rajarhat Main Road and the stretch towards the airport are where most of the activity is.',
+        'Upcoming residential projects in Rajarhat range from mid-rise blocks to tall towers, and some are part of larger townships with retail and schools inside the campus. Premium apartments in Rajarhat tend to sit in these bigger developments, where the clubhouse, sports courts and green space are shared across many towers.']),
+     ('Upcoming 2 BHK projects in Rajarhat', [
+        'For young couples and first-time buyers, upcoming 2 BHK projects in Rajarhat are often the sweet spot between price and location. Luxury 2 BHK flats in Rajarhat usually come with a full clubhouse, covered parking and better specifications than older resale homes nearby. Check the approach road too: here, two projects a kilometre apart can feel very different in daily travel.']),
+     ('Upcoming 3 BHK projects in Rajarhat', [
+        'Larger families often compare upcoming 3 BHK projects in Rajarhat with similar homes in New Town and find more carpet area for the money. Luxury 3 BHK flats in Rajarhat at the upper end add private decks, home automation and staff rooms. We put the all-in cost in writing, including GST, registration, parking, club charges and maintenance deposits, so the comparison is fair.']),
+     ('Luxury gated community in Rajarhat', [
+        'Most new launches here are planned as a luxury gated community in Rajarhat, with security at the gate, landscaped podiums and amenities inside the campus. Premium high-rise apartments Rajarhat developers are building also offer upper-floor views across the New Town skyline. Before you book, we walk the site to check build quality, the number of flats per lift and how the project handles heavy monsoon rain.'])],
+    'New launch projects in Rajarhat',
+    'We list only RERA registered upcoming projects Rajarhat buyers can verify for themselves: every registration number can be checked on the WBRERA website before booking.',
+    'rajarhat',
+    [('Rajarhat or New Town: which is better?', 'New Town is more planned and has more finished social infrastructure. Rajarhat often gives you more space for the money and is closer to the airport. The right choice depends on where you work and your budget, and we show you both side by side.'),
+     FAQ_BROKERAGE, FAQ_RERA])
+
+southern_bypass = loc_page('southern-bypass.html', 'Southern Bypass',
+    'Upcoming Projects near Southern Bypass Kolkata | HouseRoot',
+    'Upcoming projects near Southern Bypass Kolkata, verified by HouseRoot: luxury 2 & 3 BHK flats in South Kolkata, RERA checked, zero brokerage.',
+    ['Upcoming projects near Southern Bypass Kolkata', 'Luxury flats near Southern Bypass', '2 BHK flats near Southern Bypass Kolkata', '3 BHK flats near Southern Bypass Kolkata', 'Upcoming luxury residential projects South Kolkata'],
+    'Upcoming projects near Southern Bypass Kolkata', 'Southern Bypass · South Kolkata',
+    'South Kolkata has some of the city\'s most established neighbourhoods, and the Southern Bypass corridor is where much of its new housing is now planned. These are the upcoming projects near Southern Bypass Kolkata our advisors are tracking, with honest notes on price, possession and daily travel.',
+    'Architect\'s scale model of a modern home on floor plans, representing new residential towers in South Kolkata',
+    [('Luxury flats near Southern Bypass', [
+        'Buyers look at this corridor for one reason above all: it keeps them close to South Kolkata, with its schools, hospitals, markets and family networks, while offering new construction that older neighbourhoods rarely can. Large plots are scarce in the established parts of the south, so new towers with clubhouses and open green space tend to come up along the bypass and the roads that feed it.',
+        'Luxury flats near Southern Bypass typically offer what buyers miss in older South Kolkata buildings: covered parking, full power back-up, modern lifts, round-the-clock security and a proper clubhouse. Road access and metro connectivity matter a great deal here, so we map your daily commute before you shortlist anything.']),
+     ('2 BHK flats near Southern Bypass Kolkata', [
+        'Two-bedroom homes are popular with young professionals and with parents buying near their children. 2 BHK flats near Southern Bypass Kolkata vary widely in carpet area and finish from project to project, so we compare them on carpet area, price per square foot of carpet and the real monthly maintenance rather than on brochure numbers.']),
+     ('3 BHK flats near Southern Bypass Kolkata', [
+        'For growing families, 3 BHK flats near Southern Bypass Kolkata offer room for a study or a parent\'s bedroom without moving far from the neighbourhoods they already know. In premium towers, look for cross-ventilation, a separate utility balcony and a sensible number of flats per lift; these matter more over the years than a grand lobby.']),
+     ('What to check before you book', [
+        'Some low-lying pockets of South Kolkata see water-logging in heavy monsoon rain, so we check drainage and the approach road on a site visit, ideally after a rainy day. We also confirm the WBRERA registration, the land title and the developer\'s delivery record on past projects.'])],
+    'Upcoming luxury residential projects in South Kolkata',
+    'The upcoming luxury residential projects South Kolkata buyers ask us about appear here only after our team has visited the site and checked its RERA registration. If nothing fits yet, tell us your brief and we will share the current shortlist.',
+    'southern bypass',
+    [('Is the Southern Bypass area good for families?', 'It suits families who want to stay close to South Kolkata\'s schools, hospitals and markets but would rather live in a newer building with modern amenities and security.'),
+     FAQ_BROKERAGE, FAQ_RERA])
+
+# =============================== SITEMAP & ROBOTS ===============================
+def sitemap(files):
+    today = datetime.date.today().isoformat()
+    def entry(f):
+        loc = f'{SITE}/' if f == 'index.html' else f'{SITE}/{f}'
+        pr = '1.0' if f == 'index.html' else '0.9' if f in dict(LOCATIONS) or f == 'projects.html' else '0.6'
+        return f'  <url><loc>{loc}</loc><lastmod>{today}</lastmod><priority>{pr}</priority></url>'
+    return '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + '\n'.join(entry(f) for f in files) + '\n</urlset>\n'
+
+ROBOTS = f'''User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: {SITE}/sitemap.xml
+'''
+
+pages = {'index.html': index, 'blog.html': blog, 'post.html': post, 'projects.html': projects, 'project.html': project, 'about.html': about, 'developers.html': developers, 'contact.html': contact,
+         'new-town.html': new_town, 'rajarhat.html': rajarhat, 'southern-bypass.html': southern_bypass}
 for name, html in pages.items():
     (ROOT / name).write_text(html, encoding='utf-8')
     print('wrote', name, len(html))
+
+# project.html and post.html are left out: their content depends on ?id= / ?slug=
+in_sitemap = ['index.html'] + [f for f, _ in LOCATIONS] + ['projects.html', 'about.html', 'developers.html', 'blog.html', 'contact.html']
+(ROOT / 'sitemap.xml').write_text(sitemap(in_sitemap), encoding='utf-8')
+(ROOT / 'robots.txt').write_text(ROBOTS, encoding='utf-8')
+print('wrote sitemap.xml, robots.txt')

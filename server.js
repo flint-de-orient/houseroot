@@ -240,7 +240,7 @@ async function api(req, res, url) {
     if (st.locked) { audit(req, 'login-locked'); return send(res, 429, { error: `Too many wrong passwords. Try again in ${Math.ceil(st.retryAfter / 60)} min.`, retryAfter: st.retryAfter }, { 'Retry-After': String(st.retryAfter) }); }
     const body = await readJson(req);
     const pw = String(body.password || '');
-    if (pw.length > 10 || !checkPassword(pw)) {
+    if (pw.length > 64 || !checkPassword(pw)) {
       const after = noteFailure(ip); audit(req, 'login-fail');
       await sleep(800); // slow down guessing
       if (after.locked) return send(res, 429, { error: `Too many wrong passwords. Locked for ${Math.ceil(after.retryAfter / 60)} min.`, retryAfter: after.retryAfter }, { 'Retry-After': String(after.retryAfter) });
@@ -273,7 +273,7 @@ async function api(req, res, url) {
     const b = await readJson(req);
     if (!checkPassword(String(b.current || ''))) return send(res, 400, { error: 'Current password is wrong' });
     const next = String(b.next || '');
-    if (next.length < 8 || next.length > 10) return send(res, 400, { error: 'New password must be 8 to 10 characters' });
+    if (next.length < 8 || next.length > 64) return send(res, 400, { error: 'New password must be 8 to 64 characters' });
     if (!/[a-zA-Z]/.test(next) || !/\d/.test(next)) return send(res, 400, { error: 'Use at least one letter and one number' });
     if (next === String(b.current)) return send(res, 400, { error: 'New password must be different from the current one' });
     admin = Object.assign(hashPassword(next), { v: (admin.v || 0) + 1 }); fs.writeFileSync(ADMIN_FILE, JSON.stringify(admin), { mode: 0o600 });

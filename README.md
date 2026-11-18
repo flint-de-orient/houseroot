@@ -40,7 +40,7 @@ node server.js            # or: npm start
 
 - **Login lockout**: 5 wrong passwords in 15 minutes locks that IP for 15 minutes; each further lockout doubles the wait, up to 24 hours. Lockouts are stored in `data/lockouts.json`, so restarting the server does not clear them. Every failed attempt is also slowed by 0.8 s.
 - **Sessions** last 12 hours (`ADMIN_SESSION_HOURS` to change) and all sessions are ended when the password changes.
-- **Password rules**: 8 to 10 characters with at least one letter and one number. Stored as a salted scrypt hash in `data/admin.json`.
+- **Password rules**: 8 to 64 characters with at least one letter and one number. Stored as a salted scrypt hash in `data/admin.json`.
 - **Audit log**: sign-ins, failures, lockouts, uploads and every content change are appended to `data/audit.log` with time and IP.
 - **Uploads** are checked by file signature, not just extension; only real JPG, PNG, WebP, GIF or PDF content is accepted (max 6 MB).
 - **Headers**: the admin panel is served with a Content Security Policy, cannot be embedded in frames, and sends no referrer.

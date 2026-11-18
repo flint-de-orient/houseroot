@@ -93,7 +93,7 @@ def header(dark=False):
 
 FOOTER = f'''<footer class="footer"><div class="inner section stack" style="gap:48px">
   <div class="footer__grid">
-    <div class="footer__brand stack" style="gap:18px"><img src="assets/img/logo-white.png" alt="HouseRoot" style="height:60px;width:auto;align-self:flex-start"><p>Connecting you to the home you love. A real estate channel partner brand by Flint De Orient Marketing &amp; Technology Pvt. Ltd., Kolkata.</p><span style="font-size:13px;color:#8A8A8A">RERA Reg. No. [WB/XXXXX]</span></div>
+    <div class="footer__brand stack" style="gap:18px"><img src="assets/img/logo-white.png" alt="HouseRoot" style="height:60px;width:auto;align-self:flex-start"><p>HouseRoot (House Root), Kolkata. Connecting you to the home you love. A real estate channel partner brand by Flint De Orient Marketing &amp; Technology Pvt. Ltd.</p><span style="font-size:13px;color:#8A8A8A">RERA Reg. No. [WB/XXXXX]</span></div>
     <div class="footer__col"><h4>Explore</h4><a href="projects.html">New launches</a><a href="projects.html">Ready to move</a><a href="projects.html">Plots &amp; land</a><a href="projects.html">Commercial</a><a href="blog.html">Blog</a></div>
     <div class="footer__col"><h4>Company</h4><a href="about.html">About HouseRoot</a><a href="developers.html">For developers</a><a href="contact.html">Careers</a><a href="https://flintdeorient.in" target="_blank" rel="noopener">Flint De Orient</a></div>
     <div class="footer__col"><h4>Locations</h4>{''.join(f'<a href="{f}">{n}</a>' for f, n in LOCATIONS)}</div>
@@ -128,6 +128,8 @@ AGENT_SCHEMA = jsonld({
     '@type': 'RealEstateAgent',
     '@id': f'{SITE}/#agent',
     'name': 'HouseRoot',
+    'alternateName': ['House Root', 'HouseRoot Kolkata', 'House Root Kolkata'],
+    'sameAs': [],  # add social profile URLs here (Facebook, Instagram, LinkedIn, Google Business Profile)
     'url': f'{SITE}/',
     'logo': f'{SITE}/assets/img/logo.png',
     'image': f'{SITE}/{OG_IMAGE}',
@@ -140,8 +142,19 @@ AGENT_SCHEMA = jsonld({
     'parentOrganization': {'@type': 'Organization', 'name': 'Flint De Orient Marketing & Technology Pvt. Ltd.', 'url': 'https://flintdeorient.in'},
 })
 
-index = head('Home', 'RERA-registered channel partner for new homes and luxury projects in New Town, Rajarhat and Southern Bypass, Kolkata. Zero brokerage on new launches.',
-             path='', full_title='New Homes in Kolkata, Zero Brokerage | HouseRoot', schema=AGENT_SCHEMA) + header() + f'''
+# Google reads the site name it shows in results from WebSite markup on the homepage
+SITE_SCHEMA = jsonld({
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': f'{SITE}/#website',
+    'name': 'HouseRoot',
+    'alternateName': ['House Root', 'HouseRoot Kolkata', 'House Root Kolkata'],
+    'url': f'{SITE}/',
+    'publisher': {'@id': f'{SITE}/#agent'},
+})
+
+index = head('Home', 'House Root (HouseRoot) is a RERA-registered channel partner for new homes and luxury projects in New Town, Rajarhat and Southern Bypass, Kolkata.',
+             path='', full_title='HouseRoot (House Root) | New Homes in Kolkata', schema=AGENT_SCHEMA + SITE_SCHEMA) + header() + f'''
 <section class="hero" id="top">
   <div class="hero__art" aria-hidden="true"><picture><source srcset="assets/img/hero-model.webp" type="image/webp"><img class="hero__img" src="assets/img/hero-model.jpg" alt="Architectural model of a modern multi-storey home on blueprints, representing new launch projects in Kolkata" width="2200" height="1228" fetchpriority="high"></picture></div>
   <div class="inner hero__grid">
@@ -188,7 +201,7 @@ index = head('Home', 'RERA-registered channel partner for new homes and luxury p
       <span class="eyebrow">Why HouseRoot</span>
       <h2 class="h-2">Verified. Local. Zero brokerage.</h2>
       <div class="rule"></div>
-      <p class="lede" style="max-width:560px">We're not a listing site. We're the advisor who has walked every project in Kolkata and is paid by the developer, not by you.</p>
+      <p class="lede" style="max-width:560px">House Root (HouseRoot) is a Kolkata real estate channel partner, not a listing site. We're the advisor who has walked every project in the city and is paid by the developer, not by you.</p>
     </div>
     <ul class="why" data-stagger>
       <li class="why__item">

@@ -65,7 +65,9 @@ def head(title, desc, dark=False, path=None, full_title=None, keywords=None, sch
 <meta name="description" content="{desc}">
 {seo}<meta name="theme-color" content="{'#1A1A1A' if dark else '#F58220'}">
 {og}
-{schema}<link rel="icon" href="assets/img/logo.png">
+{schema}<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="192x192" href="/assets/img/favicon-192.png">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">

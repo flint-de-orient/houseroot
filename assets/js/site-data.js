@@ -230,7 +230,14 @@ ${p.cover ? `<div class="photo post-cover"><img src="${esc(p.cover)}" alt="${esc
     if (s.whatsapp) $$('a[href^="https://wa.me/"]').forEach(a => a.href = `https://wa.me/${s.whatsapp}`);
     if (s.phone) $$('a[href^="tel:"]').forEach(a => { a.href = `tel:${s.phone.replace(/\s/g, '')}`; });
     const swap = (from, to) => { if (!to) return; const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); const nodes = []; while (walker.nextNode()) if (walker.currentNode.nodeValue.includes(from)) nodes.push(walker.currentNode); nodes.forEach(n => n.nodeValue = n.nodeValue.split(from).join(to)); };
-    swap('[WB/XXXXX]', s.rera); swap('[+91 XXXXX XXXXX]', s.phone); swap('[Office address line 1]', s.address1); swap('[Line 2], Kolkata – [PIN]', s.address2);
+    swap('[WB/XXXXX]', s.rera); swap('[+91 XXXXX XXXXX]', s.phone);
+    // Footer RERA line and office address stay hidden until they are filled in under Admin → Site settings
+    const rera = String(s.rera || '').trim();
+    $$('[data-set="rera"]').forEach(el => { el.textContent = rera; });
+    $$('[data-set="rera-line"]').forEach(el => { el.hidden = !rera; });
+    const addr = [s.address1, s.address2].map(x => String(x || '').trim()).filter(Boolean);
+    $$('[data-set="address"]').forEach(el => { el.innerHTML = addr.map(esc).join('<br>'); });
+    $$('[data-set="address-wrap"]').forEach(el => { el.hidden = !addr.length; });
   }
 
   document.addEventListener('DOMContentLoaded', () => {

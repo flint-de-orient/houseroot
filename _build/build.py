@@ -71,7 +71,7 @@ def head(title, desc, dark=False, path=None, full_title=None, keywords=None, sch
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=20261117a">
+<link rel="stylesheet" href="assets/css/style.css?v=20261119a">
 </head>
 <body>
 <div class="page"><div class="card-shell{' card-shell--dark' if dark else ''}">
@@ -82,7 +82,7 @@ def header(dark=False):
     return f'''<header class="header"><div class="inner nav">
   <a href="index.html" class="nav__logo" aria-label="HouseRoot home"><img src="assets/img/{logo}" alt="HouseRoot" width="900" height="134"></a>
   <nav class="nav__links" aria-label="Primary"><a href="projects.html">Buy</a><a href="projects.html#rent">Rent</a><a href="contact.html">Sell</a><a href="contact.html#agents">Find agent</a></nav>
-  <div class="nav__right"><a href="developers.html">List property</a><a href="blog.html">Blog</a><a href="about.html">About us</a><a href="admin/" class="btn btn--sm btn--outline nav__login">Login</a><a href="contact.html" class="btn btn--sm">Join</a>
+  <div class="nav__right"><a href="developers.html">List property</a><a href="blog.html">Blog</a><a href="about.html">About us</a><a href="admin/" class="btn btn--sm btn--outline nav__login">Login</a><a href="contact.html" class="btn btn--sm">Contact us</a>
     <button class="nav__burger" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
 </div></header>
 <div class="drawer" aria-hidden="true"><div class="drawer__scrim"></div><div class="drawer__panel">
@@ -95,18 +95,18 @@ def header(dark=False):
 
 FOOTER = f'''<footer class="footer"><div class="inner section stack" style="gap:48px">
   <div class="footer__grid">
-    <div class="footer__brand stack" style="gap:18px"><img src="assets/img/logo-white.png" alt="HouseRoot" style="height:60px;width:auto;align-self:flex-start"><p>HouseRoot (House Root), Kolkata. Connecting you to the home you love. A real estate channel partner brand by Flint De Orient Marketing &amp; Technology Pvt. Ltd.</p><span style="font-size:13px;color:#8A8A8A">RERA Reg. No. [WB/XXXXX]</span></div>
+    <div class="footer__brand stack" style="gap:18px"><img src="assets/img/logo-white.png" alt="HouseRoot" style="height:60px;width:auto;align-self:flex-start"><p>HouseRoot (House Root), Kolkata. Connecting you to the home you love. A real estate channel partner brand by Flint De Orient Marketing &amp; Technology Pvt. Ltd.</p><span style="font-size:13px;color:#8A8A8A" data-set="rera-line" hidden>RERA Reg. No. <span data-set="rera"></span></span></div>
     <div class="footer__col"><h4>Explore</h4><a href="projects.html">New launches</a><a href="projects.html">Ready to move</a><a href="projects.html">Plots &amp; land</a><a href="projects.html">Commercial</a><a href="blog.html">Blog</a></div>
     <div class="footer__col"><h4>Company</h4><a href="about.html">About HouseRoot</a><a href="developers.html">For developers</a><a href="contact.html">Careers</a><a href="https://flintdeorient.in" target="_blank" rel="noopener">Flint De Orient</a></div>
     <div class="footer__col"><h4>Locations</h4>{''.join(f'<a href="{f}">{n}</a>' for f, n in LOCATIONS)}</div>
-    <div class="footer__col"><h4>Visit</h4><span>[Office address line 1]<br>[Line 2], Kolkata – [PIN]</span><a href="mailto:sales@houseroot.in">sales@houseroot.in</a></div>
+    <div class="footer__col"><h4>Visit</h4><span data-set="address-wrap" hidden><span data-set="address"></span></span><a href="mailto:sales@houseroot.in">sales@houseroot.in</a></div>
   </div>
   <div class="footer__bottom"><span>© <span data-year>2026</span> HouseRoot · Flint De Orient Marketing &amp; Technology Pvt. Ltd.</span><div class="row" style="gap:24px"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">RERA disclaimer</a><a href="admin/" style="opacity:.55">Admin</a></div></div>
 </div></footer>
 </div></div>
 <a href="https://wa.me/919230592846" class="wa-fab" aria-label="Chat on WhatsApp" target="_blank" rel="noopener">{ic('wa',26,'#fff')}</a>
-<script src="assets/js/main.js?v=20261117a" defer></script>
-<script src="assets/js/site-data.js?v=20261117a" defer></script>
+<script src="assets/js/main.js?v=20261119a" defer></script>
+<script src="assets/js/site-data.js?v=20261119a" defer></script>
 </body>
 </html>
 '''
@@ -171,7 +171,6 @@ index = head('Home', 'House Root (HouseRoot) is a RERA-registered channel partne
       </div>
     </div>
   </div>
-  <a href="project.html" class="callout callout--roof"><span class="callout__dot"></span><span class="callout__line"></span><span class="callout__card"><strong>[Project name]</strong><span>New Town · 3 BHK · ₹[XX] L onwards</span></span></a>
   <a href="contact.html" class="callout callout--visit"><span class="callout__dot"></span><span class="callout__line"></span><span class="callout__card"><strong>Free site visits</strong><span>Pick-up &amp; drop across Kolkata</span></span></a>
 </section>
 
@@ -614,7 +613,7 @@ contact = head('Contact', 'Tell HouseRoot what you are looking for — we call b
       <a href="tel:+919230592846" class="contact-line" style="gap:10px">{ic('phone',18,'#F26B0E')}Call +91 92305 92846</a>
       <a href="mailto:sales@houseroot.in" class="contact-line" style="gap:10px">{ic('mail',18,'#F26B0E')}sales@houseroot.in</a>
     </div>
-    <div class="stack" style="gap:8px;padding-top:12px;border-top:1px solid #E6E6E6;max-width:460px"><strong style="font:600 15px var(--font-display)">Visit the office</strong><span style="line-height:1.6;color:#5A5A5A">[Office address line 1]<br>[Line 2], Kolkata – [PIN]<br>Mon–Sat · 10 am – 7 pm</span><a href="https://maps.google.com" target="_blank" rel="noopener" style="font-size:14px;font-weight:700">Open in Google Maps →</a></div>
+    <div class="stack" style="gap:8px;padding-top:12px;border-top:1px solid #E6E6E6;max-width:460px"><strong style="font:600 15px var(--font-display)">Visit the office</strong><span style="line-height:1.6;color:#5A5A5A"><span data-set="address-wrap" hidden><span data-set="address"></span><br></span>Mon–Sat · 10 am – 7 pm</span><a href="https://maps.google.com" target="_blank" rel="noopener" style="font-size:14px;font-weight:700">Open in Google Maps →</a></div>
   </div>
   <form class="form-card" id="form" data-lead data-reveal="right">
     <div class="stack" style="gap:10px"><span class="label">I want to</span><div class="seg seg--sm" role="group" aria-label="I want to"><button type="button" class="is-on">Buy</button><button type="button">Rent</button><button type="button">Sell</button><button type="button">Invest</button></div></div>
